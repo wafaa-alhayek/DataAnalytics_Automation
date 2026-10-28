@@ -1,0 +1,24 @@
+{
+  "name": "Describe NGO feedback codebook v1",
+  "notes": "Generic codebook for humanitarian needs and feedback surveys. Copy and edit per client: rename themes, merge or split them, keep codes short and stable.",
+  "themes": [
+    {"code": "FOOD", "ar": "الغذاء", "en": "Food", "description": "Food baskets, meals, flour, baby formula, hunger, prices of food."},
+    {"code": "CASH", "ar": "المساعدات النقدية", "en": "Cash assistance", "description": "Asking for cash or vouchers, value of cash transfers, debts, inability to pay for basics."},
+    {"code": "SHELTER", "ar": "المأوى والسكن", "en": "Shelter and housing", "description": "Tents, damaged homes, rent, overcrowding, blankets, mattresses, winterisation of the shelter."},
+    {"code": "WASH", "ar": "المياه والنظافة", "en": "Water, sanitation and hygiene", "description": "Drinking water, water trucks, toilets, sewage, hygiene kits, soap, menstrual products."},
+    {"code": "HEALTH", "ar": "الصحة والأدوية", "en": "Health and medicine", "description": "Medicines, chronic illness, clinics, disability needs, pregnancy care, injuries."},
+    {"code": "EDUCATION", "ar": "التعليم", "en": "Education", "description": "Schools, learning spaces, school supplies, children missing education."},
+    {"code": "LIVELIHOODS", "ar": "العمل وسبل العيش", "en": "Work and livelihoods", "description": "Jobs, income, small business support, vocational training, lost livelihoods."},
+    {"code": "ENERGY", "ar": "الكهرباء والوقود", "en": "Electricity and fuel", "description": "Power, solar panels, gas for cooking, firewood, charging phones, heating fuel."},
+    {"code": "PROTECTION", "ar": "الحماية والأمان", "en": "Protection and safety", "description": "Safety, violence, child protection, harassment, risks for women and girls, documents, missing persons."},
+    {"code": "MENTAL_HEALTH", "ar": "الدعم النفسي", "en": "Mental health and psychosocial support", "description": "Stress, fear, children's trauma, need for psychosocial activities or counselling."},
+    {"code": "DISTRIBUTION", "ar": "تنظيم التوزيع", "en": "Distribution process", "description": "Queues, crowding, waiting time, distance to the distribution point, registration lists, fairness and who gets selected."},
+    {"code": "INFORMATION", "ar": "المعلومات والتواصل", "en": "Information and communication", "description": "Not knowing dates or criteria, unanswered hotline, no SMS, wanting to be informed or consulted, complaint channels."},
+    {"code": "STAFF_CONDUCT", "ar": "تعامل الطاقم", "en": "Staff conduct", "description": "How staff or volunteers treat people: respect, rudeness, favouritism, or praise for staff."},
+    {"code": "AID_QUALITY", "ar": "جودة وكمية المساعدات", "en": "Quality and quantity of aid", "description": "Aid not enough, not suitable, expired or poor quality items, wrong sizes, not matching family size."},
+    {"code": "APPRECIATION", "ar": "الشكر والرضا", "en": "Appreciation", "description": "Thanks, satisfaction, saying the help made a difference."},
+    {"code": "OTHER", "ar": "أخرى", "en": "Other", "description": "Clear content that fits no theme above. Use only when nothing else fits."}
+  ],
+  "sentiment": ["positive", "neutral", "negative", "mixed"],
+  "followup_rule": "Set needs_followup to true if the answer reports abuse, exploitation, being asked for money or favours in exchange for aid, a threat to someone's safety, a medical emergency, or a child at risk. These go to a trained staff member, never only to a dashboard."
+}
