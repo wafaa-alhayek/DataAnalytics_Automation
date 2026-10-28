@@ -1,0 +1,40 @@
+# Settings for one client survey. Every key is optional; delete what you don't need.
+# Column names are the short Kobo names (the part after the last "/").
+project: Household food security baseline, Sept 2026 (sample)
+client: Example NGO (made-up data)
+
+id_columns: [beneficiary_id]
+required: [beneficiary_id, gender, governorate]
+enumerator_column: enumerator
+
+# The agreed answer options. Anything else is flagged.
+codes:
+  gender: [female, male]
+  governorate: [Khan Younis, Rafah, Deir al-Balah, Gaza, North Gaza]
+  received_cash: [yes, no]
+
+# Allowed number ranges [min, max].
+ranges:
+  age: [18, 100]
+  hh_size: [1, 30]
+  fcs_score: [0, 112]
+
+dates:
+  collection_start: 2026-09-14
+  collection_end: 2026-10-12
+
+min_interview_minutes: 5
+
+# Answers that contradict each other. Text answers are compared lower-case.
+rules:
+  - name: No cash received, but a cash amount is recorded
+    when: received_cash == 'no' and cash_amount > 0
+
+# The indicators the report needs, and the breakdowns donors ask for.
+indicators:
+  - name: Food Consumption Score
+    columns: [fcs_score]
+    disaggregate_by: [gender, governorate]
+  - name: Income in the last month
+    columns: [income_last_month]
+    disaggregate_by: [gender]
