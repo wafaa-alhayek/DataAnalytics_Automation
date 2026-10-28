@@ -1,0 +1,8 @@
+indicator_code,sector_en,sector_ar,indicator_en,indicator_ar,unit_en,unit_ar,disaggregated,annual_target
+WASH-1,"Water, sanitation and hygiene",المياه والصرف الصحي والنظافة,People reached with safe drinking water,عدد الأشخاص الذين حصلوا على مياه شرب آمنة,people,شخص,true,120000
+WASH-2,"Water, sanitation and hygiene",المياه والصرف الصحي والنظافة,Hygiene kits distributed,عدد حقائب النظافة الموزعة,kits,حقيبة,false,30000
+FS-1,Food security,الأمن الغذائي,Households receiving food parcels,عدد الأسر التي استلمت طروداً غذائية,households,أسرة,false,25000
+FS-2,Food security,الأمن الغذائي,Multipurpose cash disbursed,المساعدات النقدية متعددة الأغراض المصروفة,USD,دولار أمريكي,false,1500000
+EDU-1,Education,التعليم,Children attending temporary learning spaces,عدد الأطفال الملتحقين بمساحات التعلم المؤقتة,children,طفل,true,18000
+PSS-1,Child protection,حماية الطفل,Children receiving psychosocial support,عدد الأطفال الذين تلقوا دعماً نفسياً اجتماعياً,children,طفل,true,12000
+HLT-1,Health,الصحة,Medical consultations provided,عدد الاستشارات الطبية المقدمة,consultations,استشارة,true,60000
