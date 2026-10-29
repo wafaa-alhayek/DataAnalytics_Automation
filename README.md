@@ -66,17 +66,17 @@ touches. 85+ reads "Ready to report", 65-84 "Usable after targeted fixes".
 
 ## BigQuery (optional)
 
-For the Google Cloud trial project `describe-ngo-lab`, and the free BigQuery
+For the Google Cloud trial project `describe-ngo-lab-2026`, and the free BigQuery
 sandbox afterwards. Run these in **Google Cloud Shell** (free, `bq` is already
 installed): open shell.cloud.google.com, `git clone` this repo, then:
 
 ```bash
 pip install -r requirements.txt
-bq mk --dataset describe-ngo-lab:client_name            # once per client
-python -m diagnostic bq-upload export.xlsx describe-ngo-lab.client_name.survey
-python -m diagnostic run --from-bigquery describe-ngo-lab.client_name.survey \
+bq mk --dataset describe-ngo-lab-2026:client_name            # once per client
+python -m diagnostic bq-upload export.xlsx describe-ngo-lab-2026.client_name.survey
+python -m diagnostic run --from-bigquery describe-ngo-lab-2026.client_name.survey \
   --config configs/client-name.yaml --out reports/client-name
-python -m diagnostic bq-sql export.xlsx describe-ngo-lab.client_name.survey > checks.sql
+python -m diagnostic bq-sql export.xlsx describe-ngo-lab-2026.client_name.survey > checks.sql
 ```
 
 - `bq-upload` loads every column as text, with the original question as the

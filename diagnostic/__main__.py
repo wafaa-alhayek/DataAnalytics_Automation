@@ -1,9 +1,9 @@
 """Command line.
 
   python -m diagnostic run survey.xlsx --config client.yaml --out reports/client
-  python -m diagnostic run --from-bigquery describe-ngo-lab.client.survey --out reports/client
-  python -m diagnostic bq-upload survey.xlsx describe-ngo-lab.client.survey
-  python -m diagnostic bq-sql survey.xlsx describe-ngo-lab.client.survey > checks.sql
+  python -m diagnostic run --from-bigquery describe-ngo-lab-2026.client.survey --out reports/client
+  python -m diagnostic bq-upload survey.xlsx describe-ngo-lab-2026.client.survey
+  python -m diagnostic bq-sql survey.xlsx describe-ngo-lab-2026.client.survey > checks.sql
 """
 from __future__ import annotations
 
