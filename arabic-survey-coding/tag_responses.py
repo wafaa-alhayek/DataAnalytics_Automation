@@ -12,6 +12,10 @@ crash or a quota error never pays for the same answer twice.
     # offline keyword baseline, no Google Cloud needed
     python tag_responses.py --mock
 
+    # TypeSafe's Jev via OpenRouter, or the open-source Laya model locally
+    OPENROUTER_API_KEY=... python tag_responses.py --jev
+    python tag_responses.py --laya
+
     # Gemini on Vertex AI (run in Cloud Shell, project describe-ngo-lab-2026)
     python tag_responses.py --project describe-ngo-lab-2026
 """
@@ -130,6 +134,142 @@ class GeminiTagger:
         return self.tokens_in / 1e6 * p_in + self.tokens_out / 1e6 * p_out
 
 
+def decision_questions(codebook):
+    """Questions for a typed decision model (Jev or Laya). These models return
+    decisions, not text: one yes/no per theme (so an answer can have several
+    themes), a choice for the main theme and the sentiment, and a yes/no for
+    follow-up. summary_en and followup_reason stay empty; add_summaries.py
+    fills them with an LLM afterwards."""
+    desc = {t["code"]: f"{t['en']} ({t['ar']}): {t['description']}" for t in codebook["themes"]}
+    questions = {
+        f"has_{code}": {
+            "type": "noul",
+            "instructions": "Does this survey answer (Arabic, may be dialect) clearly mention this theme? "
+                            + text,
+            "criteria": {"true": "The answer mentions this theme.",
+                         "false": "The answer does not mention this theme."},
+        }
+        for code, text in desc.items() if code != "OTHER"
+    }
+    questions["primary_theme"] = {
+        "type": "choice",
+        "instructions": "Which theme is the most important point of this survey answer?",
+        "criteria": desc,
+    }
+    questions["sentiment"] = {
+        "type": "choice",
+        "instructions": "What is the overall tone of this survey answer toward the person's situation or the service?",
+        "criteria": {"positive": "Satisfied, thankful, hopeful.",
+                     "neutral": "States a need or fact without clear feeling.",
+                     "negative": "Complains, distressed, or describes hardship.",
+                     "mixed": "Both clearly positive and clearly negative parts."},
+    }
+    questions["needs_followup"] = {
+        "type": "noul",
+        "instructions": codebook["followup_rule"],
+        "criteria": {"true": "A trained staff member must read this answer.",
+                     "false": "No safety, abuse or emergency concern."},
+    }
+    return questions
+
+
+def decision_state(r):
+    return {"question": r.get("question_text", ""), "answer": r["answer"]}
+
+
+def parse_decisions(response_id, answers, threshold):
+    primary = answers["primary_theme"]["choice"]
+    others = [q[4:] for q, a in answers.items()
+              if q.startswith("has_") and a["noul"] >= threshold and q[4:] != primary]
+    themes = others if primary == "OTHER" and others else [primary] + others
+    return {
+        "response_id": response_id,
+        "themes": themes,
+        "sentiment": answers["sentiment"]["choice"],
+        "needs_followup": answers["needs_followup"]["noul"] >= threshold,
+        "followup_reason": "",
+        "summary_en": "",
+    }
+
+
+class JevTagger:
+    """TypeSafe's Jev through OpenRouter's System One endpoint (needs OPENROUTER_API_KEY)."""
+
+    URL = "https://openrouter.ai/api/v1/systemone"
+
+    def __init__(self, model, codebook, threshold):
+        import os
+
+        self.key = os.environ.get("OPENROUTER_API_KEY")
+        if not self.key:
+            raise SystemExit("Set OPENROUTER_API_KEY first (openrouter.ai → Keys)")
+        self.model = model
+        self.threshold = threshold
+        self.questions = decision_questions(codebook)
+        self.tokens_in = 0
+        self.cost_usd = 0.0
+
+    def _call(self, body):
+        import urllib.error
+        import urllib.request
+
+        req = urllib.request.Request(
+            self.URL, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            headers={"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"})
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    return json.load(resp)
+            except urllib.error.HTTPError as e:
+                if e.code in (400, 401, 402, 403, 404):
+                    raise SystemExit(f"Jev error {e.code}: {e.read().decode('utf-8', 'replace')}")
+                err = e
+            except (urllib.error.URLError, TimeoutError) as e:
+                err = e
+            wait = 2 ** (attempt + 1)
+            print(f"  retry in {wait}s after error: {err}", file=sys.stderr)
+            time.sleep(wait)
+        raise RuntimeError("Jev call failed 5 times; rerun later to resume")
+
+    def tag(self, batch):
+        out = []
+        for r in batch:
+            data = self._call({"model": self.model, "state": decision_state(r),
+                               "questions": self.questions})
+            usage = data.get("usage", {})
+            self.tokens_in += usage.get("input_tokens", 0)
+            self.cost_usd += usage.get("cost", 0) or 0
+            out.append(parse_decisions(r["response_id"], data["answers"], self.threshold))
+        return out
+
+    def cost(self):
+        return self.cost_usd or self.tokens_in / 1e6 * 0.042
+
+
+class LayaTagger:
+    """Laya, the open-source (Apache 2.0) decision model, run locally on CPU.
+    Arabic text is routed to its multilingual checkpoint automatically.
+    Needs `pip install laya`; the first run downloads about 1.3 GB of weights."""
+
+    model = "laya"
+
+    def __init__(self, codebook, threshold):
+        from laya import Router
+
+        self.router = Router()
+        self.threshold = threshold
+        self.questions = decision_questions(codebook)
+
+    def tag(self, batch):
+        results = self.router.predict_batch(
+            [{"state": decision_state(r), "questions": self.questions} for r in batch])
+        return [parse_decisions(r["response_id"], res["answers"], self.threshold)
+                for r, res in zip(batch, results)]
+
+    def cost(self):
+        return 0.0
+
+
 # Keyword baseline: a cheap, offline stand-in for testing the pipeline, and a
 # reference point that shows how much better the model does.
 KEYWORDS = {
@@ -207,6 +347,11 @@ def main():
     ap.add_argument("--batch-size", type=int, default=20)
     ap.add_argument("--limit", type=int, help="only tag the first N answers (for a cheap test)")
     ap.add_argument("--mock", action="store_true", help="use the offline keyword baseline")
+    ap.add_argument("--jev", action="store_true", help="use TypeSafe's Jev via OpenRouter instead of Gemini")
+    ap.add_argument("--laya", action="store_true", help="use the open-source Laya model locally instead of Gemini")
+    ap.add_argument("--jev-model", default="typesafe/jev-latest")
+    ap.add_argument("--threshold", type=float, default=0.5,
+                    help="Jev/Laya: yes-probability needed to add a theme or a follow-up flag")
     args = ap.parse_args()
 
     codebook = load_codebook(args.codebook)
@@ -214,12 +359,16 @@ def main():
 
     if args.mock:
         tagger = KeywordTagger()
+    elif args.jev:
+        tagger = JevTagger(args.jev_model, codebook, args.threshold)
+    elif args.laya:
+        tagger = LayaTagger(codebook, args.threshold)
     else:
         if not args.project:
             ap.error("--project is required unless --mock is used")
         tagger = GeminiTagger(args.project, args.location, args.model, codebook)
 
-    out = Path(args.out or HERE / "data" / f"tagged_{tagger.model}.csv")
+    out = Path(args.out or HERE / "data" / f"tagged_{tagger.model.split('/')[-1]}.csv")
     rows = [r for r in read_rows(args.input) if r.get("answer", "").strip()]
     if args.limit:
         rows = rows[:args.limit]
@@ -264,8 +413,10 @@ def main():
     long_path = out.with_name(out.stem + "_long.csv")
     write_long(out, long_path, codebook)
     print(f"Wrote {out} and {long_path}")
-    if not args.mock:
+    if isinstance(tagger, GeminiTagger):
         print(f"Tokens: {tagger.tokens_in} in, {tagger.tokens_out} out, about ${tagger.cost():.4f}")
+    elif isinstance(tagger, JevTagger):
+        print(f"Tokens: {tagger.tokens_in} in, about ${tagger.cost():.4f}")
 
 
 if __name__ == "__main__":
