@@ -87,6 +87,10 @@ python -m diagnostic bq-sql export.xlsx describe-ngo-lab-2026.client_name.survey
   digits, interview length) as BigQuery SQL. Save the queries as views, or as a
   scheduled query, and point a Looker Studio report at them for a client who
   keeps collecting data. All queries return `check_name, column_name, records, detail`.
+  On 2026-10-29 these queries were run in `describe-ngo-lab-2026` (dataset
+  `diagnostic_demo`, 162 sample rows) and gave the same counts as the Python
+  checks: copies, shared IDs, spellings (incl. `أنثى` = `female`), Arabic digits,
+  blanks and interview length.
 
 Keep client data small (well under BigQuery's 10 GB free storage) and delete a
 client's dataset when the engagement ends.

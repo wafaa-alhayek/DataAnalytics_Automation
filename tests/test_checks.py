@@ -145,6 +145,10 @@ class SampleTests(unittest.TestCase):
         self.assertIn("`end`", sql)
         self.assertEqual(bigquery.bq_name("الجنس"), "col")
         self.assertEqual(bigquery.bq_name("_uuid"), "_uuid")
+        # Spelling check folds Arabic and English the way the Python check does,
+        # and the ID check ignores exact copies (both verified on BigQuery).
+        self.assertIn("'انثي') THEN 'female'", sql)
+        self.assertIn("ANY_VALUE(`beneficiary_id`)", sql)
 
 
 if __name__ == "__main__":

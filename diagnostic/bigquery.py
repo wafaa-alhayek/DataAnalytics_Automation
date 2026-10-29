@@ -18,8 +18,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from .checks import NAME_PATTERNS
+from datetime import datetime
+
+from .checks import NAME_PATTERNS, SYNONYMS, _Ctx
+from .config import Config
 from .load import Dataset
+from .text import normalize_label
 
 
 def bq_name(column: str) -> str:
@@ -84,6 +88,23 @@ def _bq_ref(table: str) -> str:
     return f"{parts[0]}:{'.'.join(parts[1:])}" if len(parts) == 3 else table
 
 
+def _fold_sql(col: str) -> str:
+    """The SQL twin of checks._code_key: fold case, spaces, Arabic letter forms,
+    and the same answer in English and Arabic ('F', 'أنثى' -> 'female')."""
+    base = (f"REGEXP_REPLACE(TRANSLATE(LOWER(TRIM({col})), 'أإآٱىةؤئ', 'اااايهوي'), "
+            r"r'[\s\-_.,()\x{064B}-\x{065F}\x{0670}\x{0640}]+', '')")
+    return base
+
+
+def _synonyms_sql(b: str) -> str:
+    pairs: dict[str, set] = {}
+    for word, canon in SYNONYMS.items():
+        pairs.setdefault(canon, set()).add(normalize_label(word))
+    whens = " ".join(f"WHEN {b} IN ({', '.join(repr(v) for v in sorted(keys))}) THEN '{canon}'"
+                     for canon, keys in pairs.items())
+    return f"CASE {whens} ELSE {b} END"
+
+
 def check_sql(ds: Dataset, table: str) -> str:
     """The core checks as one BigQuery script. Every query returns the same shape
     (check_name, column_name, records, detail), so they can feed one Looker Studio table."""
@@ -111,26 +132,32 @@ SELECT 'duplicate_row' AS check_name, '' AS column_name, SUM(n - 1) AS records,
 FROM (SELECT TO_JSON_STRING([{q_cols}]) AS k, COUNT(*) AS n FROM {t} GROUP BY k HAVING n > 1);
 """)
 
+    ctx = _Ctx(ds, Config(), datetime.now())
     id_pat = re.compile(NAME_PATTERNS["id"], re.I)
     ids = [c for c in questions if id_pat.search(c)]
     for c in ids:
         n = names[c]
-        blocks.append(f"""-- 3. IDs used more than once: {c}
+        # Exact copies are counted by check 2, so collapse them first.
+        blocks.append(f"""-- 3. IDs used more than once (after removing exact copies): {c}
 SELECT 'duplicate_id' AS check_name, '{plain[c]}' AS column_name, SUM(n) AS records,
        STRING_AGG(k, ', ' LIMIT 10) AS detail
-FROM (SELECT LOWER(TRIM({n})) AS k, COUNT(*) AS n FROM {t}
-      WHERE NOT {blank(n)} GROUP BY k HAVING n > 1);
+FROM (SELECT LOWER(TRIM(id_value)) AS k, COUNT(*) AS n
+      FROM (SELECT ANY_VALUE({n}) AS id_value FROM {t} GROUP BY TO_JSON_STRING([{q_cols}]))
+      WHERE NOT {blank("id_value")} GROUP BY k HAVING n > 1);
 """)
 
     spell = []
     for c in questions:
+        if not ctx.is_categorical(c):
+            continue
         n = names[c]
         spell.append(f"""SELECT 'inconsistent_code' AS check_name, '{plain[c]}' AS column_name,
        SUM(variants) AS records, STRING_AGG(spellings, ' | ' LIMIT 5) AS detail
-FROM (SELECT REGEXP_REPLACE(LOWER(TRIM({n})), r'[\\s\\-_.]+', '') AS k,
-             COUNT(DISTINCT {n}) AS variants,
-             STRING_AGG(DISTINCT {n}, ' / ' LIMIT 4) AS spellings
-      FROM {t} WHERE NOT {blank(n)} GROUP BY k HAVING variants > 1)
+FROM (SELECT {_synonyms_sql("b")} AS k,
+             COUNT(DISTINCT v) AS variants,
+             STRING_AGG(DISTINCT v, ' / ' LIMIT 4) AS spellings
+      FROM (SELECT {n} AS v, {_fold_sql(n)} AS b FROM {t} WHERE NOT {blank(n)})
+      GROUP BY k HAVING variants > 1)
 HAVING COUNT(*) > 0""")
     blocks.append("-- 4. One answer written several ways ('Female ' vs 'female')\n"
                   + "\nUNION ALL\n".join(spell) + ";\n")
