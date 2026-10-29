@@ -17,7 +17,8 @@ and without removing names, phone numbers and ID numbers first.
 |---|---|
 | `codebook.json` | 16 themes with Arabic and English labels and a description each, the sentiment scale, and the follow-up rule. Copy and edit per client. |
 | `make_sample_data.py` | Writes `data/sample_responses.csv` (the answers) and `data/gold_labels.csv` (how a human coder tagged them). |
-| `tag_responses.py` | Sends answers to Gemini in batches of 20 and writes `data/tagged_<model>.csv` plus a long `_long.csv` (one row per theme). Resumes where it stopped. `--mock` runs an offline keyword baseline instead. |
+| `tag_responses.py` | Sends answers to Gemini in batches of 20 and writes `data/tagged_<model>.csv` plus a long `_long.csv` (one row per theme). Resumes where it stopped. `--jev` uses TypeSafe's Jev via OpenRouter, `--laya` the open-source Laya model locally, `--mock` an offline keyword baseline. |
+| `add_summaries.py` | Second step for Jev or Laya output: Gemini writes the English summaries and follow-up reasons those models can't write. |
 | `evaluate.py` | Scores a tagged file against the gold labels: agreement, per-theme precision and recall, follow-up cases caught, worst disagreements. |
 | `bigquery/views.sql` | Views for Looker Studio: theme counts by question, site and gender; sentiment by site; and a follow-up queue that stays out of shared dashboards. |
 
@@ -59,9 +60,14 @@ and without removing names, phone numbers and ID numbers first.
    python tag_responses.py --mock && python evaluate.py data/tagged_keyword-baseline.csv
    ```
 
-   The keyword baseline scores 79% theme overlap, 23% sentiment and catches
-   0 of 3 follow-up cases. Gemini should beat it clearly, above all on
-   sentiment and follow-up cases; those two numbers are the demo's selling point.
+   Results on the 70 sample answers (2026-10-29):
+
+   | Tagger | Theme overlap | Sentiment | Follow-up cases caught | Cost |
+   |---|---|---|---|---|
+   | Keyword baseline | 79% | 23% | 0 of 3 | free |
+   | Gemini 3.8 Flash | 88% | 94% | 3 of 3 (+2 extra flags) | $0.027 |
+   | Jev | not run yet | | | |
+   | Laya (multilingual) | not run yet | | | |
 
 6. Load into BigQuery and build the views:
 
@@ -79,6 +85,36 @@ and without removing names, phone numbers and ID numbers first.
 7. In Looker Studio, add `survey_demo.theme_counts` as a data source and chart
    `answers` by `theme_ar` (or `theme_en`), with filters for question and site.
    Label the page "Sample data".
+
+## Compare decision models: Jev and Laya
+
+Jev (TypeSafe, paid API) and Laya (open source, Apache 2.0) don't write text.
+They answer typed questions with probabilities: one yes/no per theme, a choice
+for the main theme and the sentiment, and a yes/no for follow-up. They are
+cheaper or free, but nobody has published Arabic results for either, so test
+them on the sample before using them for a client.
+
+```bash
+# Jev: make a key at openrouter.ai → Keys. About 0.2 cents for the 70 answers.
+export OPENROUTER_API_KEY=sk-or-...
+python tag_responses.py --jev
+python evaluate.py data/tagged_jev-latest.csv
+
+# Laya: free, runs on Cloud Shell's CPU. The first run downloads about 1.3 GB.
+pip install --user laya
+python tag_responses.py --laya
+python evaluate.py data/tagged_laya.csv
+
+# Then add English summaries to whichever one you keep
+python add_summaries.py data/tagged_jev-latest.csv --project describe-ngo-lab-2026
+```
+
+`--threshold` (default 0.5) sets how sure the model must be before it adds a
+theme or a follow-up flag. Lower it if `evaluate.py` shows low recall or missed
+follow-up cases; raise it if it adds themes the coder didn't.
+
+Laya runs on your own machine, so client answers never leave it. Jev sends them
+to TypeSafe through OpenRouter, and Gemini keeps them in your Google Cloud project.
 
 ## Cost
 
