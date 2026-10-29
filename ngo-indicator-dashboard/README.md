@@ -2,7 +2,7 @@
 
 A demo of what Describe builds for NGOs: programme indicators tracked against
 targets by month, governorate, sex and age, next to country context from public
-data. It runs in BigQuery (Google Cloud project `describe-ngo-lab`) with a
+data. It runs in BigQuery (Google Cloud project `describe-ngo-lab-2026`) with a
 Looker Studio dashboard on top, in English and Arabic.
 
 **Data honesty.** The programme figures (targets and people reached) are
@@ -26,7 +26,7 @@ dataset `bigquery-public-data.world_bank_wdi`.
 
 ## Run it (about 10 minutes)
 
-1. Open <https://console.cloud.google.com/bigquery>, select project **describe-ngo-lab**.
+1. Open <https://console.cloud.google.com/bigquery>, select project **describe-ngo-lab-2026**.
 2. Open each file in `sql/` in order (01 → 04), paste into a new query tab, and run.
    In 01, run the statements one at a time and read the results of the two checks.
 3. The last query in 04 should return 7 indicators; WASH-1 and PSS-1 are on track, FS-2 is behind.

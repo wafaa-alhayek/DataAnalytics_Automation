@@ -3,7 +3,7 @@
 -- Palestine and neighbouring countries, from the World Bank's public WDI
 -- dataset in BigQuery (free to query; this reads well under 1 GB).
 
-CREATE OR REPLACE TABLE `describe-ngo-lab.ngo_demo.context_indicators` AS
+CREATE OR REPLACE TABLE `describe-ngo-lab-2026.ngo_demo.context_indicators` AS
 WITH countries AS (
   SELECT * FROM UNNEST([
     STRUCT('PSE' AS country_code, 'Palestine (West Bank and Gaza)' AS country_en, 'فلسطين (الضفة الغربية وغزة)' AS country_ar),
@@ -56,14 +56,14 @@ WHERE d.year >= 2000
 
 -- Latest available value per country and indicator, with the change since the
 -- previous reported year. Feeds the scorecards and the comparison table.
-CREATE OR REPLACE VIEW `describe-ngo-lab.ngo_demo.v_context_latest` AS
+CREATE OR REPLACE VIEW `describe-ngo-lab-2026.ngo_demo.v_context_latest` AS
 WITH ranked AS (
   SELECT
     *,
     LAG(value) OVER (PARTITION BY country_code, indicator_code ORDER BY year) AS previous_value,
     LAG(year) OVER (PARTITION BY country_code, indicator_code ORDER BY year) AS previous_year,
     ROW_NUMBER() OVER (PARTITION BY country_code, indicator_code ORDER BY year DESC) AS rn
-  FROM `describe-ngo-lab.ngo_demo.context_indicators`
+  FROM `describe-ngo-lab-2026.ngo_demo.context_indicators`
 )
 SELECT
   * EXCEPT (rn),

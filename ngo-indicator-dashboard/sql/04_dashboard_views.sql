@@ -5,7 +5,7 @@
 
 -- One row per month, indicator, governorate, sex and age group, with labels
 -- in English and Arabic. Use for trends and disaggregation charts.
-CREATE OR REPLACE VIEW `describe-ngo-lab.ngo_demo.v_reach_detail` AS
+CREATE OR REPLACE VIEW `describe-ngo-lab-2026.ngo_demo.v_reach_detail` AS
 SELECT
   r.month,
   r.indicator_code,
@@ -20,22 +20,22 @@ SELECT
   IFNULL(a.age_group_ar, 'غير مصنف') AS age_group_ar,
   r.value,
   'SAMPLE DATA' AS data_note
-FROM `describe-ngo-lab.ngo_demo.fact_monthly_reach` AS r
-JOIN `describe-ngo-lab.ngo_demo.dim_indicator` AS i USING (indicator_code)
-JOIN `describe-ngo-lab.ngo_demo.dim_governorate` AS g USING (governorate_code)
-LEFT JOIN `describe-ngo-lab.ngo_demo.dim_sex` AS s USING (sex)
-LEFT JOIN `describe-ngo-lab.ngo_demo.dim_age_group` AS a USING (age_group);
+FROM `describe-ngo-lab-2026.ngo_demo.fact_monthly_reach` AS r
+JOIN `describe-ngo-lab-2026.ngo_demo.dim_indicator` AS i USING (indicator_code)
+JOIN `describe-ngo-lab-2026.ngo_demo.dim_governorate` AS g USING (governorate_code)
+LEFT JOIN `describe-ngo-lab-2026.ngo_demo.dim_sex` AS s USING (sex)
+LEFT JOIN `describe-ngo-lab-2026.ngo_demo.dim_age_group` AS a USING (age_group);
 
 -- Progress against target per indicator and governorate.
-CREATE OR REPLACE VIEW `describe-ngo-lab.ngo_demo.v_progress_by_governorate` AS
+CREATE OR REPLACE VIEW `describe-ngo-lab-2026.ngo_demo.v_progress_by_governorate` AS
 WITH reached AS (
   SELECT indicator_code, governorate_code, SUM(value) AS reached
-  FROM `describe-ngo-lab.ngo_demo.fact_monthly_reach`
+  FROM `describe-ngo-lab-2026.ngo_demo.fact_monthly_reach`
   GROUP BY indicator_code, governorate_code
 ),
 months AS (
   SELECT COUNT(DISTINCT month) AS months_reported, MAX(month) AS last_month
-  FROM `describe-ngo-lab.ngo_demo.fact_monthly_reach`
+  FROM `describe-ngo-lab-2026.ngo_demo.fact_monthly_reach`
 ),
 base AS (
   SELECT
@@ -46,7 +46,7 @@ base AS (
     m.months_reported,
     m.last_month,
     t.target * m.months_reported / 12 AS expected_so_far
-  FROM `describe-ngo-lab.ngo_demo.fact_target` AS t
+  FROM `describe-ngo-lab-2026.ngo_demo.fact_target` AS t
   CROSS JOIN months AS m
   LEFT JOIN reached AS r USING (indicator_code, governorate_code)
 )
@@ -68,12 +68,12 @@ SELECT
   END AS status_ar,
   'SAMPLE DATA' AS data_note
 FROM base AS b
-JOIN `describe-ngo-lab.ngo_demo.dim_indicator` AS i USING (indicator_code)
-JOIN `describe-ngo-lab.ngo_demo.dim_governorate` AS g USING (governorate_code);
+JOIN `describe-ngo-lab-2026.ngo_demo.dim_indicator` AS i USING (indicator_code)
+JOIN `describe-ngo-lab-2026.ngo_demo.dim_governorate` AS g USING (governorate_code);
 
 -- Programme-level progress per indicator (all governorates together).
 -- Feeds the headline indicator table with progress bars.
-CREATE OR REPLACE VIEW `describe-ngo-lab.ngo_demo.v_progress_by_indicator` AS
+CREATE OR REPLACE VIEW `describe-ngo-lab-2026.ngo_demo.v_progress_by_indicator` AS
 SELECT
   indicator_code,
   ANY_VALUE(sector_en) AS sector_en,
@@ -99,11 +99,11 @@ SELECT
     ELSE 'متأخر'
   END AS status_ar,
   'SAMPLE DATA' AS data_note
-FROM `describe-ngo-lab.ngo_demo.v_progress_by_governorate`
+FROM `describe-ngo-lab-2026.ngo_demo.v_progress_by_governorate`
 GROUP BY indicator_code;
 
 -- Quick check: should return 7 rows. WASH-1 and PSS-1 on track, FS-2 behind.
 SELECT indicator_code, indicator_en, target, reached,
        ROUND(pct_of_target * 100) AS pct_of_target, status_en
-FROM `describe-ngo-lab.ngo_demo.v_progress_by_indicator`
+FROM `describe-ngo-lab-2026.ngo_demo.v_progress_by_indicator`
 ORDER BY indicator_code;

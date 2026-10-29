@@ -23,12 +23,12 @@ and without removing names, phone numbers and ID numbers first.
 
 ## Run it in Cloud Shell (about 10 minutes)
 
-1. Open <https://console.cloud.google.com/>, select project **describe-ngo-lab**,
+1. Open <https://console.cloud.google.com/>, select project **describe-ngo-lab-2026**,
    and click the Cloud Shell icon (top right).
 2. Turn on Vertex AI for the project (once):
 
    ```bash
-   gcloud config set project describe-ngo-lab
+   gcloud config set project describe-ngo-lab-2026
    gcloud services enable aiplatform.googleapis.com
    ```
 
@@ -43,8 +43,8 @@ and without removing names, phone numbers and ID numbers first.
 4. Test on 5 answers, then run the rest (the second run skips the first 5):
 
    ```bash
-   python tag_responses.py --project describe-ngo-lab --limit 5
-   python tag_responses.py --project describe-ngo-lab
+   python tag_responses.py --project describe-ngo-lab-2026 --limit 5
+   python tag_responses.py --project describe-ngo-lab-2026
    ```
 
    If it says a model is not found, Google has renamed or retired it. Try
@@ -66,7 +66,7 @@ and without removing names, phone numbers and ID numbers first.
 6. Load into BigQuery and build the views:
 
    ```bash
-   bq --location=US mk --dataset describe-ngo-lab:survey_demo
+   bq --location=US mk --dataset describe-ngo-lab-2026:survey_demo
    bq load --replace --source_format=CSV --skip_leading_rows=1 --allow_quoted_newlines \
      survey_demo.tagged data/tagged_gemini-3.8-flash.csv \
      response_id:STRING,question_id:STRING,site:STRING,gender:STRING,answer:STRING,themes:STRING,primary_theme:STRING,sentiment:STRING,needs_followup:INT64,followup_reason:STRING,summary_en:STRING,model:STRING,tagged_at:TIMESTAMP

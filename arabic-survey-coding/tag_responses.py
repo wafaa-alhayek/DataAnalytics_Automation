@@ -12,8 +12,8 @@ crash or a quota error never pays for the same answer twice.
     # offline keyword baseline, no Google Cloud needed
     python tag_responses.py --mock
 
-    # Gemini on Vertex AI (run in Cloud Shell, project describe-ngo-lab)
-    python tag_responses.py --project describe-ngo-lab
+    # Gemini on Vertex AI (run in Cloud Shell, project describe-ngo-lab-2026)
+    python tag_responses.py --project describe-ngo-lab-2026
 """
 
 import argparse
@@ -201,7 +201,7 @@ def main():
     ap.add_argument("--input", default=HERE / "data" / "sample_responses.csv")
     ap.add_argument("--codebook", default=HERE / "codebook.json")
     ap.add_argument("--out", default=None, help="output CSV (default: data/tagged_<model>.csv)")
-    ap.add_argument("--project", help="Google Cloud project id, e.g. describe-ngo-lab")
+    ap.add_argument("--project", help="Google Cloud project id, e.g. describe-ngo-lab-2026")
     ap.add_argument("--location", default="global")
     ap.add_argument("--model", default="gemini-3.8-flash")
     ap.add_argument("--batch-size", type=int, default=20)

@@ -1,11 +1,11 @@
 -- 01_setup_and_check.sql
--- Run in the BigQuery console with project describe-ngo-lab selected.
+-- Run in the BigQuery console with project describe-ngo-lab-2026 selected.
 -- Run each statement on its own (select it, then Run), top to bottom.
 
 -- 1) Create the dataset. It must be in the US multi-region, because the
 --    World Bank public dataset we read from lives in the US and BigQuery
 --    can't join tables across regions.
-CREATE SCHEMA IF NOT EXISTS `describe-ngo-lab.ngo_demo`
+CREATE SCHEMA IF NOT EXISTS `describe-ngo-lab-2026.ngo_demo`
 OPTIONS (
   location = 'US',
   description = 'Describe sample NGO indicator dashboard. Programme figures are SAMPLE data; context indicators are World Bank WDI (public).'

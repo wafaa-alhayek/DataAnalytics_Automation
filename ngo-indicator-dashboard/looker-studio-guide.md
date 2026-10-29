@@ -10,7 +10,7 @@ alert `#E5484D`. Background white; fonts: Readex Pro if available, else Roboto.
 ## 1. Connect the data
 
 1. Go to <https://lookerstudio.google.com> → **Create → Report**.
-2. Choose **BigQuery** → **My projects** → `describe-ngo-lab` → `ngo_demo`.
+2. Choose **BigQuery** → **My projects** → `describe-ngo-lab-2026` → `ngo_demo`.
 3. Add these five sources (Resource → Manage added data sources → Add):
    `v_progress_by_indicator`, `v_progress_by_governorate`, `v_reach_detail`,
    `context_indicators`, `v_context_latest`.
